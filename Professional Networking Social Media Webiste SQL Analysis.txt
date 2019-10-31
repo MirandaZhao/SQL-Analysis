@@ -1,0 +1,108 @@
+-- Website SQL Analysis Conducted by Miranda Zhao
+
+CREATE TABLE Lpayment
+    ("date" timestamp,"memberid" varchar(11),"amount" int)
+;
+    
+INSERT INTO Lpayment
+    ("date","memberid","amount")
+VALUES
+    ('2019-01-03','A',33.9),
+    ('2019-01-04','C',19.3),
+    ('2019-01-07','A',29.1),
+    ('2019-01-05','B',32.2),
+    ('2019-01-07','C',35.5)
+;
+
+CREATE TABLE Luser
+    ("date" timestamp,"memberid" varchar(11))
+;
+    
+INSERT INTO Luser
+    ("date","memberid")
+VALUES
+    ('2019-01-01','A'),
+    ('2019-01-01','A'),
+    ('2019-01-04','A'),
+    ('2019-01-04','C'),
+    ('2019-01-03','A'),
+    ('2019-01-03','B'),
+    ('2019-01-05','B'),
+    ('2019-01-06','B'),
+    ('2019-01-06','B'),
+    ('2019-01-04','C'),
+    ('2019-01-05','C'),
+    ('2019-01-05','D'),
+    ('2019-01-07','A'),
+    ('2019-01-07','C')
+;
+
+CREATE TABLE Ldate
+    ("date" timestamp)
+;
+    
+INSERT INTO Ldate
+    ("date")
+VALUES
+    ('2019-01-01'),
+    ('2019-01-02'),
+    ('2019-01-03'),
+    ('2019-01-04'),
+    ('2019-01-05'),
+    ('2019-01-06'),
+    ('2019-01-07'),
+    ('2019-01-08')
+;
+
+--Q1: Total Revenue & Payers: Create a table to display total revenue & number of buyers on each day
+SELECT Lpayment.date AS Date, sum(amount) AS Revenue, count(memberid) AS Num_of_Buyers
+From Lpayment
+RIGHT JOIN Ldate on Lpayment.date = Ldate.date
+where Lpayment.date is not null
+GROUP BY Lpayment.date
+ORDER BY 1,2,3;
+
+--Q2: Top payers: Create a table to display the top one payer on each day
+
+WITH cte AS
+(
+   SELECT *,
+         ROW_NUMBER() OVER (PARTITION BY date ORDER BY amount DESC) AS rn
+   FROM Lpayment
+)
+SELECT date, memberid
+FROM cte
+WHERE rn = 1
+ORDER BY 1,2;
+
+--Q3: A distribution of # days active within a week: Create a table to show how many members are active for 1 day, 2days, 3days,…7days during 01/01-07/01.
+
+WITH cte1 AS 
+(WITH cte AS
+(
+    SELECT DISTINCT date, memberid
+    FROM Luser
+    WHERE date BETWEEN '2019-01-01' AND '2019-01-07'
+    GROUP BY memberid, date
+) 
+    SELECT memberid, COUNT(memberid) as days_active
+    FROM cte
+    GROUP by memberid)
+    
+    SELECT days_active, COUNT(days_active) as count
+    FROM  cte1
+    GROUP BY days_active
+    ORDER BY 1,2;
+
+
+--Q4: Active but not payers: Create a table to display people who were active but did not pay on each day
+with cte AS 
+(select Luser.date, Luser.memberid, amount from Luser
+left join Lpayment 
+on Luser.date =  Lpayment.date and Luser.memberid =  Lpayment.memberid)
+select date, memberid from cte
+where amount is null
+ORDER BY 1,2;
+
+
+
